@@ -1,189 +1,335 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>Audio Converter Pro</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AudioConvert Pro</title>
 
-  <style>
-    body {
-      font-family: Arial;
-      background: #0f172a;
-      color: white;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
-    .card {
-      background: #111827;
-      padding: 20px;
-      border-radius: 15px;
-      width: 90%;
-      max-width: 400px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    }
+<!-- Paystack -->
+<script src="https://js.paystack.co/v1/inline.js"></script>
 
-    .dropzone {
-      border: 2px dashed #3b82f6;
-      padding: 20px;
-      text-align: center;
-      border-radius: 10px;
-      margin-bottom: 15px;
-      cursor: pointer;
-    }
+<style>
+body{margin:0;font-family:Arial;background:#0b1220;color:white}
 
-    select, button {
-      width: 100%;
-      padding: 10px;
-      margin-top: 10px;
-      border-radius: 8px;
-      border: none;
-    }
+/* NAV */
+nav{
+  display:flex;
+  justify-content:space-around;
+  background:#111827;
+  padding:10px;
+  position:sticky;
+  top:0;
+}
+nav button{
+  background:none;
+  border:none;
+  color:white;
+  font-weight:bold;
+}
 
-    button {
-      background: #3b82f6;
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
-    }
+/* PAGES */
+.page{display:none;padding:16px}
+.active{display:block}
 
-    button:hover {
-      background: #2563eb;
-    }
+/* CARD */
+.card{
+  max-width:420px;
+  margin:auto;
+  background:#111827;
+  padding:18px;
+  border-radius:16px;
+}
 
-    #status {
-      margin-top: 10px;
-      font-size: 14px;
-      opacity: 0.8;
-    }
+/* UI */
+.upload{
+  border:2px dashed #3b82f6;
+  padding:22px;
+  border-radius:12px;
+  text-align:center;
+  cursor:pointer;
+}
 
-    a {
-      display: block;
-      margin-top: 10px;
-      color: #22c55e;
-    }
-  </style>
+button,select{
+  width:100%;
+  padding:12px;
+  margin-top:10px;
+  border:none;
+  border-radius:10px;
+}
+
+.primary{background:#3b82f6;color:white;font-weight:bold}
+.pro{background:#22c55e;color:white;font-weight:bold}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:12px;
+}
+
+td,th{
+  border:1px solid #333;
+  padding:6px;
+}
+th{background:#1f2937}
+</style>
 </head>
 
 <body>
 
-<div class="card">
+<!-- ================= NAV ================= -->
+<nav>
+  <button onclick="show('home')">Home</button>
+  <button onclick="show('app')">App</button>
+  <button onclick="show('admin')">Admin</button>
+</nav>
 
-  <h2>🎧 Audio Converter Pro</h2>
-
-  <div class="dropzone" id="dropzone">
-    📂 Tap or Drop File Here
+<!-- ================= HOME ================= -->
+<div id="home" class="page active">
+  <div class="card">
+    <h1>🎧 AudioConvert Pro</h1>
+    <p>Convert audio instantly + SaaS system</p>
+    <button class="primary" onclick="show('app')">Start Converting</button>
   </div>
-
-  <input type="file" id="fileInput" hidden />
-
-  <select id="format">
-    <option value="wav">M4A → WAV</option>
-    <option value="m4a">WAV → M4A</option>
-    <option value="mp3">M4A → MP3</option>
-    <option value="m4a_mp3">MP3 → M4A</option>
-  </select>
-
-  <button onclick="convert()">Convert</button>
-
-  <div id="status">Waiting for file...</div>
-
-  <a id="downloadLink" style="display:none;"></a>
-
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/ffmpeg.min.js"></script>
+<!-- ================= APP ================= -->
+<div id="app" class="page">
+
+<div class="card">
+
+<h2>Converter</h2>
+
+<div id="userBox">Loading...</div>
+
+<div class="upload" id="uploadBox">📁 Upload</div>
+<input type="file" id="fileInput" hidden>
+
+<select id="format">
+<option value="wav">MP3 → WAV</option>
+<option value="mp3">M4A → MP3</option>
+<option value="m4a">WAV → M4A</option>
+</select>
+
+<button class="primary" onclick="convert()">Convert</button>
+
+<button class="pro" onclick="subscribe()">💎 Subscribe ₦2000</button>
+
+<div id="status"></div>
+
+<div id="refBox"></div>
+
+<a id="downloadLink" style="display:none;"></a>
+
+</div>
+</div>
+
+<!-- ================= ADMIN ================= -->
+<div id="admin" class="page">
+
+<div class="card">
+<h2>🧠 Admin Dashboard</h2>
+
+<div id="stats"></div>
+
+<table>
+<thead>
+<tr>
+<th>User</th>
+<th>Plan</th>
+<th>Used</th>
+<th>Refs</th>
+</tr>
+</thead>
+<tbody id="table"></tbody>
+</table>
+
+</div>
+</div>
 
 <script>
-const { createFFmpeg, fetchFile } = FFmpeg;
-const ffmpeg = createFFmpeg({ log: false });
+/* ================= NAV ================= */
+function show(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(page).classList.add('active');
 
-const fileInput = document.getElementById("fileInput");
-const dropzone = document.getElementById("dropzone");
-const status = document.getElementById("status");
-const link = document.getElementById("downloadLink");
+  if(page==="admin") loadAdmin();
+}
 
-// 📂 Click to upload
-dropzone.onclick = () => fileInput.click();
-
-// 📥 Drag & drop
-dropzone.ondragover = e => {
-  e.preventDefault();
-  dropzone.style.borderColor = "#22c55e";
+/* ================= FIREBASE ================= */
+const firebaseConfig={
+  apiKey:"YOUR_FIREBASE_KEY",
+  authDomain:"YOUR_PROJECT.firebaseapp.com",
+  projectId:"YOUR_PROJECT"
 };
 
-dropzone.ondragleave = () => {
-  dropzone.style.borderColor = "#3b82f6";
+firebase.initializeApp(firebaseConfig);
+
+const auth=firebase.auth();
+const db=firebase.firestore();
+
+let userId,userData;
+
+/* ================= INIT USER ================= */
+auth.signInAnonymously().then(async(res)=>{
+  userId=res.user.uid;
+
+  const ref=db.collection("users").doc(userId);
+  const doc=await ref.get();
+
+  if(!doc.exists){
+    await ref.set({
+      used:0,
+      plan:"free",
+      subscriptionActive:false,
+      refCode:Math.random().toString(36).substring(2,8),
+      referrals:0
+    });
+  }
+
+  loadUser();
+});
+
+/* ================= LOAD USER ================= */
+async function loadUser(){
+  const doc=await db.collection("users").doc(userId).get();
+  userData=doc.data();
+
+  document.getElementById("userBox").innerText=
+    userData.subscriptionActive?"💎 PRO":"🆓 FREE";
+
+  document.getElementById("status").innerText=
+    userData.subscriptionActive?"Unlimited":`${userData.used}/3`;
+
+  document.getElementById("refBox").innerText=
+    "🔗 " + window.location.origin + "?ref=" + userData.refCode;
+}
+
+/* ================= SUBSCRIPTION ================= */
+function subscribe(){
+  let handler=PaystackPop.setup({
+    key:"YOUR_PAYSTACK_KEY",
+    email:"user@email.com",
+    amount:200000,
+    currency:"NGN",
+
+    callback:function(){
+      alert("Payment sent. Waiting for activation (webhook)");
+    }
+  });
+
+  handler.openIframe();
+}
+
+/* ================= LIMIT LOGIC ================= */
+async function canUse(){
+  const doc=await db.collection("users").doc(userId).get();
+  userData=doc.data();
+
+  return userData.subscriptionActive || userData.used<3;
+}
+
+/* ================= UPLOAD ================= */
+document.getElementById("uploadBox").onclick=()=>{
+  document.getElementById("fileInput").click();
 };
 
-dropzone.ondrop = e => {
-  e.preventDefault();
-  fileInput.files = e.dataTransfer.files;
-  dropzone.innerText = fileInput.files[0].name;
-};
+/* ================= FFmpeg ================= */
+const {createFFmpeg,fetchFile}=FFmpeg;
+const ffmpeg=createFFmpeg({log:false});
+let ready=false;
 
-// 📂 File select
-fileInput.onchange = () => {
-  dropzone.innerText = fileInput.files[0].name;
-};
+async function ensure(){
+  if(!ready){
+    await ffmpeg.load();
+    ready=true;
+  }
+}
 
-async function convert() {
-  const file = fileInput.files[0];
-  const format = document.getElementById("format").value;
+/* ================= CONVERT ================= */
+async function convert(){
 
-  if (!file) {
-    alert("Upload a file first");
+  if(!(await canUse())){
+    alert("Upgrade required");
     return;
   }
 
-  status.innerText = "⏳ Loading engine...";
+  const file=document.getElementById("fileInput").files[0];
+  if(!file)return alert("Upload file");
 
-  if (!ffmpeg.isLoaded()) {
-    await ffmpeg.load();
+  await ensure();
+
+  const input="in."+file.name.split(".").pop();
+  const format=document.getElementById("format").value;
+
+  let output,cmd;
+
+  if(format==="wav"){
+    output="out.wav";
+    cmd=["-i",input,output];
   }
 
-  status.innerText = "⚡ Converting... please wait";
-
-  const inputName = "input." + file.name.split('.').pop();
-  let outputName;
-  let cmd = [];
-
-  if (format === "wav") {
-    outputName = "output.wav";
-    cmd = ["-i", inputName, outputName];
-
-  } else if (format === "m4a") {
-    outputName = "output.m4a";
-    cmd = ["-i", inputName, "-c:a", "aac", outputName];
-
-  } else if (format === "mp3") {
-    outputName = "output.mp3";
-    cmd = ["-i", inputName, "-c:a", "libmp3lame", outputName];
-
-  } else if (format === "m4a_mp3") {
-    outputName = "output.m4a";
-    cmd = ["-i", inputName, "-c:a", "aac", outputName];
+  if(format==="mp3"){
+    output="out.mp3";
+    cmd=["-i",input,"-c:a","libmp3lame",output];
   }
 
-  ffmpeg.FS("writeFile", inputName, await fetchFile(file));
+  if(format==="m4a"){
+    output="out.m4a";
+    cmd=["-i",input,"-c:a","aac",output];
+  }
 
+  ffmpeg.FS("writeFile",input,await fetchFile(file));
   await ffmpeg.run(...cmd);
 
-  const data = ffmpeg.FS("readFile", outputName);
+  const data=ffmpeg.FS("readFile",output);
 
-  const mime = outputName.endsWith("mp3")
-    ? "audio/mpeg"
-    : "audio/mp4";
+  const url=URL.createObjectURL(new Blob([data.buffer]));
 
-  const url = URL.createObjectURL(new Blob([data.buffer], { type: mime }));
+  const link=document.getElementById("downloadLink");
+  link.href=url;
+  link.download=output;
+  link.innerText="⬇ Download";
+  link.style.display="block";
 
-  link.href = url;
-  link.download = outputName;
-  link.innerText = "⬇ Download Converted File";
-  link.style.display = "block";
+  if(!userData.subscriptionActive){
+    await db.collection("users").doc(userId).update({
+      used:userData.used+1
+    });
+  }
 
-  status.innerText = "✅ Done!";
+  loadUser();
+}
+
+/* ================= ADMIN ================= */
+async function loadAdmin(){
+  const snap=await db.collection("users").get();
+
+  let total=0,pro=0,free=0;
+  let rows="";
+
+  snap.forEach(d=>{
+    let u=d.data();
+    total++;
+    u.subscriptionActive?pro++:free++;
+
+    rows+=`
+    <tr>
+      <td>${d.id.slice(0,6)}</td>
+      <td>${u.subscriptionActive?"PRO":"FREE"}</td>
+      <td>${u.used}</td>
+      <td>${u.referrals||0}</td>
+    </tr>`;
+  });
+
+  document.getElementById("stats").innerText=
+    `Users: ${total} | Pro: ${pro} | Free: ${free}`;
+
+  document.getElementById("table").innerHTML=rows;
 }
 </script>
 
