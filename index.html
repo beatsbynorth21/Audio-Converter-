@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Audio Converter Pro</title>
+
+  <style>
+    body {
+      font-family: Arial;
+      background: #0f172a;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .card {
+      background: #111827;
+      padding: 20px;
+      border-radius: 15px;
+      width: 90%;
+      max-width: 400px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+
+    .dropzone {
+      border: 2px dashed #3b82f6;
+      padding: 20px;
+      text-align: center;
+      border-radius: 10px;
+      margin-bottom: 15px;
+      cursor: pointer;
+    }
+
+    select, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 8px;
+      border: none;
+    }
+
+    button {
+      background: #3b82f6;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #2563eb;
+    }
+
+    #status {
+      margin-top: 10px;
+      font-size: 14px;
+      opacity: 0.8;
+    }
+
+    a {
+      display: block;
+      margin-top: 10px;
+      color: #22c55e;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="card">
+
+  <h2>🎧 Audio Converter Pro</h2>
+
+  <div class="dropzone" id="dropzone">
+    📂 Tap or Drop File Here
+  </div>
+
+  <input type="file" id="fileInput" hidden />
+
+  <select id="format">
+    <option value="wav">M4A → WAV</option>
+    <option value="m4a">WAV → M4A</option>
+    <option value="mp3">M4A → MP3</option>
+    <option value="m4a_mp3">MP3 → M4A</option>
+  </select>
+
+  <button onclick="convert()">Convert</button>
+
+  <div id="status">Waiting for file...</div>
+
+  <a id="downloadLink" style="display:none;"></a>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/ffmpeg.min.js"></script>
+
+<script>
+const { createFFmpeg, fetchFile } = FFmpeg;
+const ffmpeg = createFFmpeg({ log: false });
+
+const fileInput = document.getElementById("fileInput");
+const dropzone = document.getElementById("dropzone");
+const status = document.getElementById("status");
+const link = document.getElementById("downloadLink");
+
+// 📂 Click to upload
+dropzone.onclick = () => fileInput.click();
+
+// 📥 Drag & drop
+dropzone.ondragover = e => {
+  e.preventDefault();
+  dropzone.style.borderColor = "#22c55e";
+};
+
+dropzone.ondragleave = () => {
+  dropzone.style.borderColor = "#3b82f6";
+};
+
+dropzone.ondrop = e => {
+  e.preventDefault();
+  fileInput.files = e.dataTransfer.files;
+  dropzone.innerText = fileInput.files[0].name;
+};
+
+// 📂 File select
+fileInput.onchange = () => {
+  dropzone.innerText = fileInput.files[0].name;
+};
+
+async function convert() {
+  const file = fileInput.files[0];
+  const format = document.getElementById("format").value;
+
+  if (!file) {
+    alert("Upload a file first");
+    return;
+  }
+
+  status.innerText = "⏳ Loading engine...";
+
+  if (!ffmpeg.isLoaded()) {
+    await ffmpeg.load();
+  }
+
+  status.innerText = "⚡ Converting... please wait";
+
+  const inputName = "input." + file.name.split('.').pop();
+  let outputName;
+  let cmd = [];
+
+  if (format === "wav") {
+    outputName = "output.wav";
+    cmd = ["-i", inputName, outputName];
+
+  } else if (format === "m4a") {
+    outputName = "output.m4a";
+    cmd = ["-i", inputName, "-c:a", "aac", outputName];
+
+  } else if (format === "mp3") {
+    outputName = "output.mp3";
+    cmd = ["-i", inputName, "-c:a", "libmp3lame", outputName];
+
+  } else if (format === "m4a_mp3") {
+    outputName = "output.m4a";
+    cmd = ["-i", inputName, "-c:a", "aac", outputName];
+  }
+
+  ffmpeg.FS("writeFile", inputName, await fetchFile(file));
+
+  await ffmpeg.run(...cmd);
+
+  const data = ffmpeg.FS("readFile", outputName);
+
+  const mime = outputName.endsWith("mp3")
+    ? "audio/mpeg"
+    : "audio/mp4";
+
+  const url = URL.createObjectURL(new Blob([data.buffer], { type: mime }));
+
+  link.href = url;
+  link.download = outputName;
+  link.innerText = "⬇ Download Converted File";
+  link.style.display = "block";
+
+  status.innerText = "✅ Done!";
+}
+</script>
+
+</body>
+</html>
